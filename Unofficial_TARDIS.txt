@@ -1,0 +1,1603 @@
+@name TARDIS Unofficial By Cookiemorph
+@model models/drmatt/tardis/atomaccel.mdl
+@inputs
+@outputs XYZ:vector
+@persist SavePos:vector RefuelCorner1:vector RefuelCorner2:vector SaveAng:angle
+@persist Secure Program1 RefuelRandom1 RefuelRandom2 Fuel FuelOn MaxFuel InFlight RefuelTime RefuelTimeTotal Refuelling
+@persist FuelLossFlight SecureMemory Paradox ParadoxRandom1 ParadoxRandom2 EpMode EpModeAware CurDeaths Deaths EpDo DoOnce3 DeathCheck Checked
+@persist InTeleport FuelLossTeleport DoOnce RandomX RandomY RandomZ LandingLights R R2 R3 RPM LandingLightsLanding DoOnce4
+@persist Force Mass LightPassRandom Autospin Calling Skin DoOnce2 HealthDetect Destruct DestructRun BuddySystem AwaitingResponse LandingLightReturn
+@persist [I LandingLightModel Model LightPass TName CModel]:string TimeCounter TimeDistort Leaking LeakFixSearch FuelLossLeaking InLoop Teleporting
+@persist [TARDIS Buddy LandingLight1 LandingLight2 Player Player2 Target Owner Receiver Holo Interior]:entity
+@persist [Explodable1 Explodable2 Explodable3 Explodable4 Explodable5 Exploadable6]:entity
+@persist SaidA:array SaidS:string [Colour1 Colour2]:vector BuddySaid:array BuddyTrust OwnerTrust Timer
+runOnChat(1)
+
+if (first()){
+    TARDIS=entity():isConstrainedTo():tardisGet()
+    Interior=entity():isConstrainedTo()
+    TARDIS:createWire(entity(),"XYZ", "XYZ")
+    Owner=TARDIS:owner()
+    Target=Owner
+    #entity():setAlpha(0)
+    Secure=0
+    Paradox=0
+    Autospin=0
+    Calling=0
+    CallMsg=""
+    HealthDetect=0
+    Destruct=0
+    DestructRun=0
+    InLoop=0
+    
+    DoOnce2=0
+    DoOnce4=0
+    
+    #---EP1 Death stuff
+    DeathCheck=0
+    EpModeAware=0
+    EpMode=1
+    Checked=0
+    
+    #--Companion System----------------
+    BuddySystem=0
+    AwaitingResponse=0
+    Buddy=Holo
+    
+    #BuddyTrust=20
+    #OwnerTrust=75
+    
+    #--Landing Lights Stuff------------
+    
+    TimeCounter=0
+    TimeDistort=0
+    Mass=TARDIS:mass()
+    LandingLights=0
+    Force=0
+    LandingLightsLanding=0
+    
+    #holoCreate(10)
+    #holoAng(10,ang(0,0,0))
+    #holoPos(10,Interior:pos()+vec(-350,140,-120))
+    
+    holoCreate(3)
+    holoModel(3,"models/effects/splodearc.mdl")
+    holoCreate(4)
+    holoModel(4,"models/effects/splodearc.mdl")
+    holoCreate(5)
+    holoModel(5,"models/effects/splodearc.mdl")
+    
+    holoAlpha(3,0)
+    holoAlpha(4,0)
+    holoAlpha(5,0)
+    
+    holoScale(3,vec(0.02,0.02,0.02))
+    holoScale(4,vec(0.02,0.02,0.02))
+    holoScale(5,vec(0.02,0.02,0.02))
+    
+    LightPassRandom=random(1,5)
+    LightPassRandomN=round(LightPassRandom)
+    if(LightPassRandomN==1){
+        LightPass="yowzah"
+        chatPrint(Owner,"Passphrase Hint: Y-WZ-H")
+    }elseif(LightPassRandomN==2){
+        LightPass="geronimo"
+        chatPrint(Owner,"Passphrase Hint: G-R--I-O")
+    }elseif(LightPassRandomN==3){
+        LightPass="fantastic"
+        chatPrint(Owner,"Passphrase Hint: F-NT--T-C")
+    }elseif(LightPassRandomN==4){
+        LightPass="doctor"
+        chatPrint(Owner,"Passphrase Hint: D-CT-R")
+    }elseif(LightPassRandomN==5){
+        LightPass="tardis"
+        chatPrint(Owner,"Passphrase Hint: T-R-IS")
+    }
+    
+    #--Fuel Stuff-----------------------
+    
+    MaxFuel=1000
+    Fuel=1000
+    FuelOn=1
+    FuelLossFlight=1
+    FuelLossTeleport=2
+    FuelLossLeaking=10
+    FuelPercent=Fuel/MaxFuel*100
+    round(FuelPercent,1)
+    Leaking=0
+    LeakFixSearch=0
+
+    #--Rift Holo------------------
+    
+    holoCreate(2)
+    holoModel(2,"models/effects/portalfunnel.mdl")
+    holoPos(2,TARDIS:pos()+vec(0,0,100))
+    holoAng(2,TARDIS:toWorld(ang(0,0,0)))
+    holoColor(2,vec(255,255,255))
+    holoAlpha(2,0)
+    holoParent(2,TARDIS)
+  
+    #--Emergency Program 1 holo---
+    Model=Owner:model()
+    
+    holoCreate(1)
+    holoModel(1,Model)
+    holoAnim(1,3)
+    holoPos(1,Interior:pos())
+    holoAng(1,ang(0,52,0))
+    holoAlpha(1,0)
+    Holo=holoEntity(1)
+    
+    function demat(V:vector){
+        Success=TARDIS:tardisDemat(V)
+        if (Success){
+            chatPrint(Owner,"TARDIS moving.")
+        }elseif(TARDIS:tardisInVortex()){
+            if(InLoop==1){
+                TARDIS:tardisSetDestination(SavePos)
+                InLoop=0
+                TimeDistort=0
+                chatPrint(Owner,"TARDIS destination set.")
+            }else{
+                TARDIS:tardisSetDestination(V)
+                chatPrint(Owner,"TARDIS destination set.")
+            }
+        }
+    }
+    
+    function demat2(V:vector, A:angle){
+        Success=TARDIS:tardisDemat(V,A)
+        if (Success){
+            chatPrint(Owner,"TARDIS moving.")
+        }elseif(TARDIS:tardisInVortex()){
+            if(InLoop==1){
+                TARDIS:tardisSetDestination(SavePos,SaveAng)
+                InLoop=0
+                TimeDistort=0
+                chatPrint(Owner,"TARDIS destination set.")
+            }else{
+                TARDIS:tardisSetDestination(V,A)
+                chatPrint(Owner,"TARDIS destination set.")
+            }
+        }
+    }
+    
+    function vector getEscapePos(){
+        if (map()=="gm_madgrass_v6"){
+            return vec(-11270, -6790, -955)
+        }elseif (map()=="freespace_revolution"){
+            return vec(840, -12840, -6120)
+        }elseif (map()=="gm_wot_a5"){
+            return vec(-8939, 2716, -9199)
+        }elseif (map()=="gm_freespace_13"){
+            return vec(-15378.062,12658.719,-15487.5)
+        }elseif (map()=="gm_warmap_v5"){
+            return vec(8055.75,-604.594,-13307.719)
+        }elseif (map()=="gm_bigcity"){
+            RandomX = random(9671.929688,10593.456055)
+            RandomY = random(-8231.812500,-8313.320313)
+            return vec(RandomX,RandomY,-11135.719)
+        }elseif(map()=="gm_construct_flatgrass_v6-2"){
+            return vec(13243.406,2608.781,-887.719)
+        }elseif(map()=="gm_carcon_ws"){
+            RandomX = random(193.843170,4071.534424)
+            RandomY = random(-5884.252930,-6115.213379)
+            return vec(RandomX,RandomY,-14207.718750)
+        }elseif(map()=="gm_buildersworld_finalv3"){
+            RandomX = random(2100.5864257813,3637.1865234375)
+            RandomY = random(-1158.9822998047,-1226.0826416016)
+            return vec(RandomX,RandomY,-1143.71875)
+        }else{
+            return vec(0,0,0)
+        }
+    }
+    
+    function angle getEscapeAng(){
+        if (map()=="gm_wot_a5"){
+            return ang(0,-152,0)
+        }elseif(map()=="gm_warmap_v5"){
+            return ang(0,180,0)
+        }elseif(map()=="gm_bigcity"){
+            return ang(0,-90,0)
+        }elseif(map()=="gm_construct_flatgrass_v6-2"){
+            return ang(0,90,0)
+        }elseif(map()=="gm_freespace_13"){
+            return ang(0,-90,0)
+        }elseif(map()=="gm_carcon_ws"){
+            return ang(0,90,0)
+        }elseif(map()=="gm_buildersworld_finalv3"){
+            return ang(0,0,0)
+        }else{
+            return ang(0,0,0)
+        }
+    }
+    
+    function vector refuelCornerTopLeft(){
+        if(map()=="gm_warmap_v5"){
+            return vec(1105.75,-3857.281,-14235)
+        }elseif(map()=="gm_bigcity"){
+            return vec(-2747.031,891.531,-11135.719)
+        }elseif(map()=="gm_madgrass_v6"){
+            return vec(10498.125,14484.656,0.219)
+        }elseif(map()=="gm_freespace_13"){
+            return vec(-2434.728760,7804.514648,-16807.750000)
+        }elseif(map()=="gm_carcon_ws"){
+            return vec(8702.253906,-4519.498535,-8707.254883)
+        }elseif(map()=="gm_buildersworld_finalv3"){
+            return vec(-4363.4677734375,8817.3115234375,-545.71875)
+        }else{
+            return vec(-3000,-3000,-3000)
+        }
+    }
+    
+    function vector refuelCornerBottomRight(){
+        if(map()=="gm_warmap_v5"){
+            return vec(2409.469,-4975.469,-14435)
+        }elseif(map()=="gm_bigcity"){
+            return vec(-1605.156,-1084.156,-11135.719)
+        }elseif(map()=="gm_madgrass_v6"){
+            return vec(14788.344,9618.531,0.25)
+        }elseif(map()=="gm_freespace_13"){
+            return vec(1411.187744,11651.302734,-14807.750000)
+        }elseif(map()=="gm_carcon_ws"){
+            return vec(6690.830078,-7745.601074,-8403.620117)
+        }elseif(map()=="gm_buildersworld_finalv3"){
+            return vec(-2390.1418457031,11501.942382813,-445.71875)
+        }else{
+            return vec(3000,3000,3000)
+        }
+    }
+}
+
+interval(270)
+
+FuelPercent=Fuel/MaxFuel*100
+InFlight=TARDIS:tardisFlying()
+InTeleport=TARDIS:tardisMoving()
+InVortex=TARDIS:tardisInVortex()
+
+RPM = abs(TARDIS:angVel():yaw())
+Vel=RPM
+
+R=R+100*5
+R2=R2+150*5
+R3=R3+200*5
+
+holoAng(6,TARDIS:angles())
+
+TardisHp = TARDIS:tardisHealth()
+Deaths=Owner:deaths()
+
+if(chatClk(Owner)){
+    LastSaid=Owner:lastSaid():lower():explode(" ")
+    Cmd=LastSaid[1,string]
+    Arg=LastSaid[2,string]
+    Arg2=LastSaid[3,string]
+    
+    if(Cmd=="!target"){
+        if(LastSaid[2,string]){
+            Target=findPlayerByName(Arg)
+        }else{
+            Target=owner()
+        }
+        hideChat(1)
+        chatPrint(Owner,"Target set to " + Target:name())
+    }elseif(Cmd=="!go"){
+        if(Paradox!=1){
+            if(TimeCounter<1){
+                local NewPos=Target:pos()
+                local Yaw=Target:eyeAngles():yaw()
+                local Offset=150
+                if(Arg=="up"){
+                    demat(NewPos+Target:up()*Offset)
+                }elseif(Arg=="forward"){
+                    demat2(NewPos+Target:forward()*Offset, ang(0,Yaw+180,0))
+                }elseif(Arg=="back"){
+                    demat2(NewPos+Target:forward()*-Offset, ang(0,Yaw,0))
+                }elseif(Arg=="down"){
+                    demat(NewPos+Target:up()*-Offset)
+                }elseif(Arg=="right"){
+                    demat2(NewPos+Target:right()*Offset, ang(0,Yaw+90,0))
+                }elseif(Arg=="left"){
+                    demat2(NewPos+Target:right()*-Offset, ang(0,Yaw+270,0))
+                }elseif(Arg=="exact"){
+                    demat2(NewPos,ang(0,Yaw,0))
+                }elseif(Arg=="playx"){
+                    findByClass("gmod_playx")
+                    PlayX=find()
+                    demat2(PlayX:toWorld(vec(-290,-38,-230)), ang(0,0,0))
+                }else{
+                    demat2(NewPos+Target:forward()*Offset, ang(0,Yaw+180,0))
+                }
+                TimeCounter++
+            }elseif(Arg=="landinglight"){
+                    if(BuddySystem!=1){
+                        if(Arg2==LightPass){
+                            if(LandingLights==1){
+                                if(TARDIS:tardisFlying()==0){
+                                    TARDIS:tardisFlightmode()
+                                }
+                                if(TARDIS:tardisLongflighted()==0){
+                                    TARDIS:tardisLongflight()
+                                }
+                                if(TARDIS:tardisPhyslocked()==1){
+                                    TARDIS:tardisPhyslock()
+                                }
+                                Autospin=0
+                                Secure=0
+                                if(InLoop==0){
+                                    demat2(LandingLight1:pos()+vec(0,0,20),ang(0,0,0))
+                                }elseif(InLoop==1){
+                                    TARDIS:tardisSetDestination(LandingLight2:pos()+vec(0,0,20),ang(0,0,0))
+                                    LandingLightReturn=1
+                                }
+                                chatPrint(Owner,"You have successfully retrieved the landing light passphrase. TARDIS locking on!")
+                                LandingLightsLanding=1
+                                timer("landinglightsmat",16000)
+                            }elseif(LandingLights==0){
+                                if(TARDIS:tardisFlying()==0){
+                                    TARDIS:tardisFlightmode()
+                                }
+                                if(TARDIS:tardisLongflighted()==0){
+                                    TARDIS:tardisLongflight()
+                                }
+                                if(TARDIS:tardisPhyslocked()==1){
+                                    TARDIS:tardisPhyslock()
+                                }
+                                Autospin=0
+                                Secure=0
+                                if(InLoop==0){
+                                    demat2(LandingLight1:pos()+vec(0,0,20),ang(0,0,0))
+                                }elseif(InLoop==1){
+                                    TARDIS:tardisSetDestination(LandingLight1:pos()+vec(0,0,20),ang(0,0,0))
+                                    LandingLightReturn=1
+                                }
+                                chatPrint(Owner,"You have successfully retrieved the landing light passphrase. TARDIS locking on!")
+                                LandingLightsLanding=1
+                                timer("landinglightsmat",16000)
+                            }
+                        }elseif(Arg2!=LightPass){
+                            chatPrint(Owner,"You have used an incorrect passphrase! The TARDIS could not lock onto a landing light")
+                        }
+                    }elseif(BuddySystem==1){
+                        chatPrint(Owner,"You cannot use this function when buddy system is enabled.")
+                    }
+            }else{
+                if(TARDIS:tardisLocked()==0){
+                    TARDIS:tardisLock()
+                }
+                if(TARDIS:tardisLongflighted()==1){
+                    TARDIS:tardisLongflight()
+                }
+                chatPrint(Owner,"Your use of the TARDIS has accumulated too many temporal distortions. Landing lights are needed to lock onto the person.")
+                SavePos=TARDIS:pos()
+                SaveAng=TARDIS:angles()
+                local NewPos=Target:pos()
+                local Yaw=Target:eyeAngles():yaw()
+                local Offset=150
+                if(Arg=="up"){
+                    demat(NewPos+Target:up()*Offset)
+                }elseif(Arg=="forward"){
+                    demat2(NewPos+Target:forward()*Offset, ang(0,Yaw+180,0))
+                }elseif(Arg=="back"){
+                    demat2(NewPos+Target:forward()*-Offset, ang(0,Yaw,0))
+                }elseif(Arg=="down"){
+                    demat(NewPos+Target:up()*-Offset)
+                }elseif(Arg=="right"){
+                    demat2(NewPos+Target:right()*Offset, ang(0,Yaw+90,0))
+                }elseif(Arg=="left"){
+                    demat2(NewPos+Target:right()*-Offset, ang(0,Yaw+270,0))
+                }elseif(Arg=="exact"){
+                    demat2(NewPos,ang(0,Yaw,0))
+                }elseif(Arg=="playx"){
+                    findByClass("gmod_playx")
+                    PlayX=find()
+                    demat2(PlayX:toWorld(vec(-290,-38,-230)), ang(0,0,0))
+                }else{
+                    demat2(NewPos+Target:forward()*Offset, ang(0,Yaw+180,0))
+                }
+                TimeDistort=1
+            }
+        }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot teleport while a paradox is taking place.")}
+        hideChat(1)
+    }elseif(Cmd=="!escape"){
+        if(Paradox!=1){
+            demat2(getEscapePos(),getEscapeAng())
+        }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot teleport while a paradox is taking place.")}
+        hideChat(1)
+    }elseif(Cmd=="!cloak"){
+        if(Paradox!=1){
+        local Success=TARDIS:tardisPhase()
+        if (Success==1){
+            if(TARDIS:tardisVisible()){
+                chatPrint(Owner,"TARDIS now visible.")
+            }else{
+                chatPrint(Owner,"TARDIS no longer visible.")
+            }
+        }
+        }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot phase while a paradox is taking place.")}
+        hideChat(1)
+    }elseif(Cmd=="!flightmode"){
+    if(Paradox!=1){
+        local Success=TARDIS:tardisFlightmode()
+        if (Success==1){
+            if(TARDIS:tardisFlying()){
+                chatPrint(Owner,"TARDIS now flying.")
+            }else{
+                chatPrint(Owner,"TARDIS no longer flying.")
+            }
+        }
+    }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot fly while a paradox is taking place.")}
+    hideChat(1)
+    }elseif(Cmd=="!lock"){
+        local Success=TARDIS:tardisLock()
+        if (Success==1){
+            if(TARDIS:tardisLocked()){
+                chatPrint(Owner,"TARDIS now locked.")
+            }else{
+                chatPrint(Owner,"TARDIS no longer locked.")
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!repair"){
+        local Success=TARDIS:tardisSelfrepair()
+        if (Success==1){
+            if(owner():tardisGet()!=TARDIS){
+                if(TARDIS:tardisSelfrepairing()){
+                    chatPrint(Owner,"TARDIS self-repair initiated.")
+                }else{
+                    chatPrint(Owner,"TARDIS self-repair cancelled.")
+                }
+            }
+        }else{
+            chatPrint(Owner,"ERROR: TARDIS may be at full health or already repairing.")
+        }
+        hideChat(1)
+    }elseif(Cmd=="!physlock"){
+        local Success=TARDIS:tardisPhyslock()
+        if (Success==1){
+            if(TARDIS:tardisPhyslocked()){
+                chatPrint(Owner,"TARDIS now phys-locked.")
+            }else{
+                chatPrint(Owner,"TARDIS no longer phys-locked.")
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!power"){
+    if(Paradox!=1){
+        local Success=TARDIS:tardisPower()
+        if (Success==1){
+            if(TARDIS:tardisPowered()){
+                chatPrint(Owner,"TARDIS now powered up.")
+            }else{
+                chatPrint(Owner,"TARDIS no longer powered up.")
+            }
+        }
+    }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot power up while a paradox is taking place.")}
+    hideChat(1)
+    }elseif(Cmd=="!isomorph"){
+        local Success=TARDIS:tardisIsomorph()
+        if (Success==1){
+            if(TARDIS:tardisIsomorphic()){
+                chatPrint(Owner,"TARDIS isomorphic security systems enabled.")
+            }else{
+                chatPrint(Owner,"TARDIS isomorphic security systems disabled.")
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!longflight"){
+        local Success=TARDIS:tardisLongflight()
+        if (Success==1){
+            if(TARDIS:tardisLongflighted()){
+                chatPrint(Owner,"TARDIS long-flight enabled.")
+            }else{
+                chatPrint(Owner,"TARDIS long-flight disabled.")
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!save"){
+        SavePos=TARDIS:pos()
+        SaveAng=TARDIS:angles()
+        XYZ=SavePos
+        chatPrint(Owner,"Position saved.")
+        hideChat(1)
+    }elseif(Cmd=="!restore"){
+        demat2(SavePos,SaveAng)
+        hideChat(1)
+    }elseif(Cmd=="!back"){
+    if(Paradox!=1){
+        TARDIS:tardisFastReturn()
+    }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot teleport while a paradox is taking place.")}
+    hideChat(1)
+    }elseif(Cmd=="!health"){
+        chatPrint(Owner,"TARDIS Health: " + TARDIS:tardisHealth() + "%")
+        hideChat(1)
+    }elseif(Cmd=="!mat"){
+        if(InLoop==1){
+            TARDIS:tardisSetDestination(SavePos,SaveAng)
+            chatPrint(Owner,"TARDIS materialising.")
+            InLoop=0
+            TimeDistort=0
+            TARDIS:tardisMaterialise()
+        }else{
+            chatPrint(Owner,"TARDIS materialising.")
+            TARDIS:tardisMaterialise()
+        }
+        hideChat(1)
+    }elseif(Cmd=="!demat"){
+        TARDIS:tardisFastDemat()
+        hideChat(1)
+    }elseif(Cmd=="!secure"){
+        if(Paradox!=1){
+        if(Calling==0){
+        if(Arg=="1"){
+            if(TARDIS:tardisPowered()==1){
+                if(TARDIS:tardisFlying()==0){
+                    if(Secure==0 | Secure==2){
+                        if(SecureMemory==1){
+                            SecureMemory=0
+                        }
+                        Secure = 1
+                        holoPos(1,Interior:pos())
+                        holoAlpha(1,0)
+                        chatPrint(Owner,"Secure Mode 1 Activated")
+                    }
+                }else{
+                    chatPrint(Owner,"Secure Mode 1 cannot be active during flight")
+                }
+            }
+        }
+        elseif(Arg=="2"){
+            if(TARDIS:tardisPowered()==1){
+                if(TARDIS:tardisFlying()==0){
+                    if(Secure==0 | Secure==1){
+                        if(SecureMemory==1){
+                            SecureMemory=0
+                        }
+                        Secure = 2
+                        if(TARDIS:tardisVisible()==0){
+                            TARDIS:tardisPhase()
+                        }
+                        holoPos(1,TARDIS:toWorld(vec(100,0,0)))
+                        holoAlpha(1,0)
+                        holoAng(1,TARDIS:angles())
+                        chatPrint(Owner,"Secure Mode 2 Activated")
+                    }
+                }else{
+                    chatPrint(Owner,"Secure Mode 2 cannot be active during flight")
+                }
+            }
+        }elseif(Arg=="off"){
+            Secure=0
+            holoPos(1,Interior:pos())
+            holoAlpha(1,0)
+            chatPrint(Owner,"Secure Mode De-activated")
+            if(TARDIS:tardisLocked()==1){
+                TARDIS:tardisLock()
+            }
+            if(TARDIS:tardisVisible()==0){
+                TARDIS:tardisPhase()
+            }
+            if(TARDIS:tardisPhyslocked()==1){
+                TARDIS:tardisPhyslock()
+            }
+            if(TARDIS:tardisIsomorphic()==1){
+                TARDIS:tardisIsomorph()
+            }
+        }elseif(Arg==""){
+            chatPrint(Owner,"You must state which secure mode you would like to use. !secure 1/2/off - Select one of these and place after !secure.")
+        }
+        }elseif(Calling==1){
+            chatPrint(Owner,"You cannot use Secure Mode 2 when your Visual Interface is busy calling someone.")
+        }
+        }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot activate secure mode while a paradox is taking place.")}
+        hideChat(1)
+    }elseif(Cmd=="!ep1"){
+        if(Paradox!=1){
+            if(Secure!=2){
+                if(EpMode==1){
+                    if(TARDIS:tardisPowered()==1){
+                        if(Program1==0){
+                            Program1=1
+                        }else{
+                            Program1=0
+                        }
+                        if(Program1==1){
+                            if(TARDIS:tardisLongflighted()==0){
+                                TARDIS:tardisLongflight()
+                            }else{}
+                            if(TARDIS:tardisIsomorphic()==0){
+                                TARDIS:tardisIsomorph()
+                            }else{}
+                            if(TARDIS:tardisLocked()==0){
+                                TARDIS:tardisLock()
+                            }else{}
+                            EscapePos=1
+                            Secure=0
+                            demat2(getEscapePos(),getEscapeAng())
+                            timer("teleportwait",5000)
+                        }
+                    }
+                }elseif(EpMode==2){
+                    if(DeathCheck==0){
+                        DeathCheck=1
+                        timer("deathcheck",1000)
+                        chatPrint(Owner,"Emergency Program 1 Death Detection system enabled.")
+                    }elseif(DeathCheck==1){
+                        DeathCheck=0
+                        stoptimer("deathcheck")
+                        chatPrint(Owner,"Emergency Program 1 Death Detection system disabled.")
+                    }
+                }
+            }elseif(Secure==2){chatPrint(Owner,"You cannot use Emergency Program 1 as the Visual Interface is busy guarding your TARDIS.")}
+        }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot teleport while a paradox is taking place.")}
+    hideChat(1)
+    }elseif(Cmd=="!epmode"){
+        if(Arg=="1"){
+            EpMode=1
+            chatPrint(Owner,"Emergency Program 1 Mode: "+EpMode)
+        }elseif(Arg=="2"){
+            EpMode=2
+            chatPrint(Owner,"Emergency Program 1 Mode: "+EpMode)
+        }
+    hideChat(1)
+    }elseif(Cmd=="!refuel"){
+    if(FuelOn==1){
+    if(TARDIS:tardisFlying()!=1){
+    if(TARDIS:tardisMoving()!=1){
+    if(Paradox!=1){
+        if(Fuel==1000){
+            chatPrint(Owner,"The TARDIS is already at "+FuelPercent+"% fuel.")    
+        }else{
+        Refuelling=1
+        RefuelTime=MaxFuel-Fuel
+        RefuelTimeTotal=RefuelTime*1000
+        RefuelTimeTotalRandom=RefuelTimeTotal/10000
+        holoColor(2,vec(0,200,0))
+        holoAlpha(2,255)
+        chatPrint(Owner,RefuelTimeTotal/10000+" seconds.")
+        chatPrint(Owner,"Refuelling the TARDIS")
+        if(TARDIS:tardisPowered()==1){
+            TARDIS:tardisPower()
+        }
+        TARDIS:soundPlay(10,75,"ambient/machines/teleport3.wav")
+        Interior:soundPlay(11,75,"ambient/machines/teleport3.wav")
+        timer("refuel",RefuelTimeTotal/10)
+        RefuelRandom1=random(1,RefuelTimeTotalRandom/4)
+        RefuelRandom2=round(RefuelRandom1)
+        timer("paradoxrandom",RefuelRandom2*1000)
+        }
+    }else{
+        chatPrint(Owner,"The TARDIS could not detect the space-time rift.")
+    }
+    }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot refuel while a paradox is taking place.")}
+    }
+    }
+    hideChat(1)
+    }elseif(Cmd=="!fueltoggle"){
+        if(Paradox!=1){
+        if(FuelOn==0){
+            FuelOn=1
+            chatPrint(Owner,"Fuel System Enabled")
+        }else{
+            FuelOn=0
+            chatPrint(Owner,"Fuel System Disabled")
+        }
+        }elseif(Paradox==1){chatPrint(Owner,"The fuel system cannot be toggled during a paradox!")}
+    hideChat(1)
+    }elseif(Cmd=="!fuel"){
+        chatPrint(Owner,FuelPercent+"% Fuel.")
+        hideChat(1)
+    }elseif(Cmd=="!help"){
+        chatPrint(Owner,"This is a list of all the additional commands Cookiemorph added to the TARDIS E2. It works only on gm_carcon_ws and gm_bigcity so far.")
+        chatPrint(Owner,"!ep1 - This will enable Emergency Program One. If Mode 2 is active, then the TARDIS will only activate EP1 once the TARDIS Owner dies.")
+        chatPrint(Owner,"!epmode 1/2 - This will change the ep mode. 1 = Normal Mode. 2 = Death mode; If TARDIS owner dies, EP1 activates.")
+        chatPrint(Owner,"!secure 1/2/off - This will interact with secure mode. 1 = Complete Lockdown, 2 = Visual Interface Guard.")
+        chatPrint(Owner,"!fueltoggle - This will enable the fuel usage system.")
+        chatPrint(Owner,"!refuel - This will refuel the TARDIS")
+        chatPrint(Owner,"!fuel - Displays current fuel level.")
+        chatPrint(Owner,"!call playername - This will send a Visual Interface call to the specified player, telling them to find your TARDIS.")
+        chatPrint(Owner,"!landinglight - This will create a landing light and will generate a random who related passphrase with it. They are iconic and easy to guess. Geronimo!")
+        chatPrint(Owner,"!go landinglight passphrase - This will take you to the landinglight you have spawned. You will need to correctly guess the passphrase for it to teleport.")
+        chatPrint(Owner,"!autospin 1/2/off - This will interact with the autospin feature. 1 = Anti-clockwise, 2 = Clockwise.")
+        chatPrint(Owner,"!buddy playername - This will enable the companion system for use with landing lights. To disable, do !buddy")
+        chatPrint(Owner,"!destruct - This will self destruct the TARDIS.")
+        hideChat(1)
+    }elseif(Cmd=="!track"){
+        local TrackEnt=owner():aimEntity()
+        if (Arg=="me"){TrackEnt=owner()}
+        if (Arg=="off"){TrackEnt=noentity()}
+        local Success=TARDIS:tardisTrack(TrackEnt)
+        if (Success==1){
+            if (TARDIS:tardisTracking():isValid()){
+                chatPrint(Owner,"TARDIS tracking entity set.")
+            }else{
+                chatPrint(Owner,"TARDIS tracking disabled.")
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!spinmode"){
+        if(Arg==""){Arg="-1"}
+        local Spinmode=TARDIS:tardisSpinmode(Arg:toNumber())
+        local SpinmodeS=""
+        if (Spinmode==-1){SpinmodeS="anti-clockwise"}
+        if (Spinmode==0){SpinmodeS="none"}
+        if (Spinmode==1){SpinmodeS="clockwise"}
+        chatPrint(Owner,"TARDIS Spinmode set to: " + SpinmodeS + ".")
+        hideChat(1)
+    }elseif(Cmd=="!empty"){
+        if(Owner:steamID()=="STEAM_0:1:7149885"){
+            Fuel = 20
+            hideChat(1)
+            chatPrint(Owner,"Emptying fuel!")
+        }else{
+            chatPrint(Owner,"You need to be Cookiemorph to use this command!")
+        }
+    }elseif(Cmd=="!pilot"){
+        if(TARDIS:tardisPilot():isValid()){
+            chatPrint(Owner,"TARDIS pilot: " + TARDIS:tardisPilot():name())
+        }else{
+            chatPrint(Owner,"TARDIS has no current pilot.")
+        }
+    }elseif(Cmd=="!hads"){
+        local Success=TARDIS:tardisHADS()
+        if (Success){
+            if (TARDIS:tardisIsHADS()){
+                chatPrint(Owner,"TARDIS HADS enabled.")
+            }else{
+                chatPrint(Owner,"TARDIS HADS disabled.")
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!call"){
+    if(Secure==0){
+        if(LastSaid[2,string]){
+            Receiver=findPlayerByName(Arg)
+        }else{
+            Receiver=owner()
+        }
+        if(TARDIS:tardisPowered()==1){
+            chatPrint(Owner,"Calling "+Receiver:name())
+            chatPrint(Receiver,"You are being called by "+Owner:name()+"'s TARDIS Visual Interface. Please wait!")
+            timer("callholoplace",5000)
+            Calling=1
+        }elseif(TARDIS:tardisPowered()==0){
+            chatPrint(Owner,"You cannot make a Visual Interface call when the TARDIS is powered down.")
+        }
+    }elseif(Secure==2){
+        chatPrint(Owner,"You cannot make a Visual Interface Call when the Visual Interface is guarding your TARDIS!")
+    }
+    hideChat(1)
+    }elseif(Cmd=="!landinglight"){
+        LandingLightN=random(1,3)
+        LandingLightN1=round(LandingLightN)
+        if(LandingLightN1==1){
+            LandingLightModel="models/props_combine/breenbust.mdl"
+        }elseif(LandingLightN1==2){
+            LandingLightModel="models/props_combine/breenglobe.mdl"
+        }elseif(LandingLightN1==3){
+            LandingLightModel="models/props_junk/plasticbucket001a.mdl"
+        }
+        if(LandingLights==0){
+            if(BuddySystem==0){
+                if(Target!=Owner){
+                    LandingLight1=propSpawn(LandingLightModel,Target:toWorld(vec(100,0,30)),1)
+                    LandingLight2:entRemove()
+                    LandingLights=0
+                    chatPrint(Owner,"New landing light created at target: "+Target:name())
+                }else{
+                    LandingLight1=propSpawn(LandingLightModel,Owner:aimPos(),1)
+                    LandingLight2:entRemove()
+                    LandingLights=0
+                    chatPrint(Owner,"New landing light created")
+                }
+            }
+            elseif(BuddySystem==1){
+                LandingLight1=propSpawn(LandingLightModel,Buddy:toWorld(vec(100,0,30)),1)
+                LandingLight2:entRemove()
+                LandingLights=1
+                AwaitingResponse=1
+                chatPrint(Owner,"New landing light created at "+Buddy:name()+". Awaiting response from "+Buddy:name())
+                chatPrint(Buddy,Owner:name()+" has created a landing light. Call it using the passphrase "+LightPass)
+            }
+        }elseif(LandingLights==1){
+            if(BuddySystem==0){
+                if(Target!=Owner){
+                    LandingLight2=propSpawn(LandingLightModel,Target:toWorld(vec(100,0,30)),1)
+                    LandingLight1:entRemove()
+                    LandingLights=0
+                    chatPrint(Owner,"New landing light created at target: "+Target:name())
+                }else{
+                    LandingLight2=propSpawn(LandingLightModel,Owner:aimPos(),1)
+                    LandingLight1:entRemove()
+                    LandingLights=0
+                    chatPrint(Owner,"New landing light created")
+                }
+            }
+            elseif(BuddySystem==1){
+                LandingLight2=propSpawn(LandingLightModel,Buddy:toWorld(vec(100,0,30)),1)
+                LandingLight1:entRemove()
+                LandingLights=0
+                AwaitingResponse=1
+                chatPrint(Owner,"New landing light created at "+Buddy:name()+". Awaiting response from "+Buddy:name())
+                chatPrint(Buddy,Owner:name()+" has created a landing light. Call it using the passphrase "+LightPass)
+            }
+        }
+        hideChat(1)
+    }elseif(Cmd=="!autospin"){
+        if(Arg=="1"){
+            Autospin=1
+            chatPrint(Owner,"Autospinning anti-clockwise")
+        }elseif(Arg=="2"){
+            Autospin=2
+            chatPrint(Owner,"Autospinning clockwise")
+        }elseif(Arg=="off"){
+            Autospin=0
+            chatPrint(Owner,"Autospinning de-activated")
+        }elseif(Arg==""){
+            Autospin=0
+            chatPrint(Owner,"Autospinning de-activated")
+        }
+        hideChat(1)
+    }elseif(Cmd=="!destruct"){
+        if(Paradox!=1){
+            chatPrint(Owner,"TARDIS Self Destruct Sequence Initiated - destruction process starting in 5 seconds.")
+            timer("paradox1",5000)
+            if(TARDIS:tardisPowered()==1){
+                TARDIS:tardisPower()
+            }
+            Destruct=1
+            if(TardisHp>=90 & TardisHp<=100){
+                DestructRun=0
+                #print(DestructRun)
+            }elseif(TardisHp>=50 & TardisHp<90){
+                DestructRun=1
+                #print(DestructRun)
+            }elseif(TardisHp>=20 & TardisHp<50){
+                DestructRun=2
+                #print(DestructRun)
+            }elseif(TardisHp>0 & TardisHp<20){
+                DestructRun=3
+                #print(DestructRun)
+        }
+        }elseif(Paradox==1){
+            chatPrint(Owner,"The TARDIS cannot self destruct during a paradox!")
+        }
+        hideChat(1)
+    }elseif(Cmd=="!buddy"){
+        if(LastSaid[2,string]){
+            Buddy=findPlayerByName(Arg)
+            BuddyTrust=20
+            BuddySystem=1
+            #timer("buddytrust",60000)
+            chatPrint(Owner,"Companion System enabled. "+Buddy:name()+" is now your companion.")
+            chatPrint(Buddy,"You are now "+Owner:name()+"'s TARDIS companion.")
+        }else{
+            #stoptimer("buddytrust")
+            BuddySystem=0
+            chatPrint(Buddy,"You are no longer "+Owner:name()+"'s TARDIS companion.")
+            chatPrint(Owner,Buddy:name()+" is no longer your companion. The companion system has been disabled.")
+            Buddy=Holo
+        }
+        hideChat(1)
+    }
+                                                  
+}
+
+#if(clk("buddytrust")){
+#    if(BuddySystem==1){
+#        BuddyTrust=BuddyTrust+1
+#        chatPrint(Buddy,"Your trust with "+Owner:name()+"'s TARDIS has increased to "+BuddyTrust)
+#        chatPrint(Owner,Buddy:name()+"'s trust with your TARDIS has increased to "+BuddyTrust)
+#        timer("buddytrust",60000)
+#    }
+#}
+
+if(BuddySystem==1){
+    BS=Buddy:lastSaid():lower()
+    if(chatClk(Buddy)){
+        BSaid=BS:explode(" ")
+        Said=BuddySaid[1,string]
+        
+        if(BS:find(LightPass) & AwaitingResponse==1){
+            if(BuddySystem==1){
+                if(LandingLights==1){
+                    if(TARDIS:tardisFlying()==0){
+                        TARDIS:tardisFlightmode()
+                    }
+                    if(TARDIS:tardisLongflighted()==0){
+                        TARDIS:tardisLongflight()
+                    }
+                    if(TARDIS:tardisPhyslocked()==1){
+                        TARDIS:tardisPhyslock()
+                    }
+                    Autospin=0
+                    Secure=0
+                    TimeDistort=0
+                    demat2(LandingLight1:pos()+vec(0,0,20),ang(0,0,0))
+                    LandingLightsLanding=1
+                    AwaitingResponse=0
+                    chatPrint(Owner,Buddy:name()+" has successfully retrieved the landing light passphrase. TARDIS locking on!")
+                    chatPrint(Owner,"You have successfully retrieved the landing light passphrase. "+Owner:name()+"'s TARDIS locking on!")
+                    timer("landinglightsmat",16000)
+                }elseif(LandingLights==0){
+                    if(TARDIS:tardisFlying()==0){
+                        TARDIS:tardisFlightmode()
+                    }
+                    if(TARDIS:tardisLongflighted()==0){
+                        TARDIS:tardisLongflight()
+                    }
+                    if(TARDIS:tardisPhyslocked()==1){
+                        TARDIS:tardisPhyslock()
+                    }
+                    Autospin=0
+                    Secure=0
+                    TimeDistort=0
+                    demat2(LandingLight2:pos()+vec(0,0,20),ang(0,0,0))
+                    LandingLightsLanding=1
+                    AwaitingResponse=0
+                    chatPrint(Owner,Buddy:name()+" has successfully retrieved the landing light passphrase. TARDIS locking on!")
+                    chatPrint(Buddy,"You have successfully retrieved the landing light passphrase. "+Owner:name()+"'s TARDIS locking on!")
+                    timer("landinglightsmat",16000)
+                }
+            }elseif(BuddySystem==0){chatPrint(Buddy,"You cannot use this function when companion system is disabled.")}
+        }
+    }
+}
+
+
+#-Destruct Shit-------------------------------------------------
+if(Destruct==1){
+    if(TARDIS:tardisPowered()==1){
+        TARDIS:tardisPower()
+    }
+}
+
+#-----Time Distortion shit--------------------------------------------------------
+
+if(TimeDistort==1 & LandingLightReturn==0){
+    if(TARDIS:tardisMoving()==1){
+        Teleporting=1
+    }
+}
+
+if(Teleporting==1){
+    if(TARDIS:tardisMoving()==0){
+        if(TARDIS:tardisLongflighted()==0){
+            TARDIS:tardisLongflight()
+        }
+        TARDIS:tardisFastDemat()
+        Teleporting=0
+        Inloop=1
+    }
+}
+
+#--Exterior Cloister-------------------------------------------------------------------------------
+
+    findByClass("player")
+    findIncludePlayer(Owner)
+    Player2=find()
+    
+    Dist2=Player2:pos():distance(TARDIS:pos())
+    
+    if(Dist2<1000){
+        if(TardisHp<=20){
+            if(DoOnce2==0){
+                timer("cloister",0)
+                DoOnce2=1
+            }
+        }elseif(TardisHp>20){
+            soundStop(1)
+            DoOnce2=0
+        }
+    }elseif(Dist2>1500){
+        if(TardisHp<=20){
+            DoOnce2=0
+            soundStop(1)
+        }
+    }
+        
+
+if(clk("cloister")){
+    TARDIS:soundPlay(1,100,"tardis/cloisterbell_loop.wav")
+}
+
+#------Full Repair Skin Change-----------------------------------
+if(TardisHp==0){
+    HealthDetect=1
+}
+
+if(HealthDetect==1){
+    if(TardisHp==100){
+        timer("repairskinchange",0)
+   }
+}
+
+if(clk("repairskinchange")){
+    TARDIS:setSkin(randint(0,3))
+    HealthDetect=0
+}
+       
+#----Autospin--------------------------------
+if(InFlight==1){
+if(Autospin==1){
+    TARDIS:applyAngForce(ang(0,Mass*35,0))
+}elseif(Autospin==2){
+    TARDIS:applyAngForce(ang(0,-Mass*35,0))
+}elseif(Autospin==0){}
+}
+
+#----Landing Light Rotation
+        
+if(Force==1){
+    TARDIS:applyAngForce(ang(0,Mass*100,0))
+    holoScale(3,vec(Vel/500,Vel/500,Vel/500))
+    holoScale(4,vec(Vel/500,Vel/500,Vel/500))
+    holoScale(5,vec(Vel/500,Vel/500,Vel/500))
+}elseif(Force==2){
+    TARDIS:applyAngForce(ang(0,-Mass*100,0))
+    holoScale(3,vec(Vel/500,Vel/500,Vel/500))
+    holoScale(4,vec(Vel/500,Vel/500,Vel/500))
+    holoScale(5,vec(Vel/500,Vel/500,Vel/500))
+}elseif(Force==0){}
+
+##------Landing Lights Stuff-------------------------------------
+if(LandingLightsLanding==1){
+    holoAng(3,TARDIS:angles()+ang(R,R,0))
+    holoAng(4,TARDIS:angles()+ang(R2,0,R2))
+    holoAng(5,TARDIS:angles()+ang(0,R3,R3))
+}
+
+holoPos(3,TARDIS:toWorld(vec(0,0,50)))
+holoPos(4,TARDIS:toWorld(vec(0,0,50)))
+holoPos(5,TARDIS:toWorld(vec(0,0,50)))
+
+if(clk("landinglightsmat")){
+    if(TARDIS:tardisInVortex()==1){
+        TARDIS:tardisMaterialise()
+    }
+    if(TARDIS:tardisPhyslocked()==1){
+        TARDIS:tardisPhyslock()
+    }
+    if(TARDIS:tardisLocked()==1){
+        TARDIS:tardisLock()
+    }
+    InLoop=0
+    Teleporting=0
+    TimeDistort=0
+    TimeCounter=0
+    LandingLightReturn=0
+    #print(InLoop+","+Teleporting+","+TimeDistort+","+TimeCounter)
+    Force=1
+    timer("landinglightsholo",9000)
+}
+if(clk("landinglightsholo")){
+    holoAlpha(3,80)
+    holoAlpha(4,80)
+    holoAlpha(5,80)
+    timer("landinglightsholo2",4000)
+}
+if(clk("landinglightsholo2")){
+    holoAlpha(3,160)
+    holoAlpha(4,160)
+    holoAlpha(5,160)
+    timer("landinglightsholo3",1000)
+    Force=2
+}
+if(clk("landinglightsholo3")){
+    holoAlpha(3,255)
+    holoAlpha(4,255)
+    holoAlpha(5,255)
+    timer("landinglightsending",7000)
+}
+if(clk("landinglightsending")){
+    if(TARDIS:tardisFlying()==1){
+        TARDIS:tardisFlightmode()
+    }
+    if(TARDIS:tardisLongflighted()==1){
+        TARDIS:tardisLongflight()
+    }
+    LandingLightsLanding=0
+    holoScale(3,vec(0.02,0.02,0.02))
+    holoScale(4,vec(0.02,0.02,0.02))
+    holoScale(5,vec(0.02,0.02,0.02))
+    holoAlpha(3,0)
+    holoAlpha(4,0)
+    holoAlpha(5,0)
+    TARDIS:soundPlay(4,200,"ambient/explosions/explode_7.wav")
+    Force=0
+    if(LandingLights==0){
+        LandingLight1:propDelete()
+    }elseif(LandingLights==1){
+        LandingLight2:propDelete()
+    }
+    AwaitingResponse=0
+}
+    
+    
+##------Voice Interface Call-------------------------------------
+if(clk("callholoplace")){
+    holoPos(1,Receiver:toWorld(vec(100,0,0)))
+    holoAng(1,Receiver:angles()+ang(0,180,0))
+    timer("holofade1",300)
+}
+if(clk("holofade1")){
+    holoAlpha(1,60)
+    Holo:soundPlay(2,50,"buttons/button1.wav")
+    timer("holofade2",300)
+}
+if(clk("holofade2")){
+    holoAlpha(1,120)
+    timer("holofade3",300)
+}
+if(clk("holofade3")){
+    holoAlpha(1,180)
+    Holo:soundPlay(2,50,"buttons/button1.wav")
+    timer("holofade4",300)
+}
+if(clk("holofade4")){
+    holoAlpha(1,240)
+    timer("holofade5",300)
+}
+if(clk("holofade5")){
+    holoAlpha(1,255)
+    timer("tardiscall",300)
+}
+if(clk("tardiscall")){
+    holoAlpha(1,255)
+    chatPrint(Receiver,"TARDIS VISUAL INTERFACE: Come to "+Owner:name()+"'s TARDIS for an adventure!")
+    chatPrint(Owner,Receiver:name()+" has received your TARDIS Visual Interface call.")
+    timer("tardiscallend",5000)
+}
+if(clk("tardiscallend")){
+    holoAlpha(1,240)
+    timer("tardiscallend2",300)
+}
+if(clk("tardiscallend2")){
+    holoAlpha(1,180)
+    timer("tardiscallend3",300)
+}
+if(clk("tardiscallend3")){
+    holoAlpha(1,120)
+    timer("tardiscallend4",300)
+}
+if(clk("tardiscallend4")){
+    holoAlpha(1,60)
+    timer("tardiscallend5",300)
+}
+if(clk("tardiscallend5")){
+    holoAlpha(1,0)
+    holoPos(1,Interior:pos())
+    Holo:soundPlay(3,50,"buttons/button18.wav")
+    Calling=0
+    chatPrint(Owner,"The TARDIS Visual Interface has finished sending your call.")
+}
+
+##------Emergency Program 1 stuff--------------------------------
+
+if(clk("deathcheck")){
+    if(DeathCheck==1){
+        CurDeaths=Deaths
+        #chatPrint(Owner,"CurDeaths saved as "+CurDeaths)
+        timer("deathcheck",1000)
+        Checked=1
+    }
+}
+
+if(Deaths>CurDeaths){
+    if(DeathCheck==1 & Checked==1){
+        if(DoOnce3==0){
+            chatPrint(Owner,"Owner death detected. Emergency Program 1 initiating.")
+            stoptimer("deathcheck")
+            EpModeAware=1
+            DeathCheck=0
+            Checked=0
+            DoOnce3=1
+            EpDo=1
+            timer("ep1start2",3000)
+        }
+    }
+}
+
+if(clk("ep1start2")){
+if(EpModeAware==1){
+    if(EpDo==1){
+        if(Paradox!=1){
+            if(Secure!=2){
+                if(EpMode==2){
+                    if(TARDIS:tardisPowered()==1){
+                        if(Program1==0){
+                            Program1=1
+                        }else{
+                            Program1=0
+                        }
+                        if(Program1==1){
+                            if(TARDIS:tardisLongflighted()==0){
+                                TARDIS:tardisLongflight()
+                            }else{}
+                            if(TARDIS:tardisIsomorphic()==0){
+                                TARDIS:tardisIsomorph()
+                            }else{}
+                            if(TARDIS:tardisLocked()==0){
+                                TARDIS:tardisLock()
+                            }else{}
+                            Secure=0
+                            demat2(getEscapePos(),getEscapeAng())
+                            timer("teleportwait",5000)
+                        }
+                    }
+                }
+            }elseif(Secure==2){chatPrint(Owner,"You cannot use Emergency Program 1 as the Visual Interface is busy guarding your TARDIS.")}
+        }elseif(Paradox==1){chatPrint(Owner,"The TARDIS cannot teleport while a paradox is taking place.")}
+    }
+}
+}
+
+if(clk("teleportwait")){
+    if(TARDIS:tardisMoving()==1){
+        holoPos(1,Interior:pos()-vec(-60,-80,47))
+        holoAng(1,ang(0,52,0))
+        timer("Holoappear",19000)
+    }
+}
+if(clk("Holoappear")){
+    if(Program1==1){
+        holoAlpha(1,255)
+        Holo:soundPlay(2,50,"buttons/button1.wav")
+        timer("message1",1000)
+    }else{
+        holoAlpha(1,0)
+    }
+}
+if(clk("message1")){
+    Holo:soundPlay(6,1,"hl1/fvox/warning.wav")
+    soundVolume(1,1000)
+    timer("message2",1200)
+}   
+if(clk("message2")){
+    Holo:soundPlay(7,5,"hl1/fvox/near_death.wav")
+    soundVolume(2,100)
+    timer("Holodisappear",5000)
+}
+if(clk("Holodisappear")){
+    Holo:soundPlay(3,50,"buttons/button18.wav")
+    holoAlpha(1,0)
+    holoPos(1,Interior:pos())
+    if(TARDIS:tardisMoving()==1){
+        TARDIS:tardisMaterialise()
+    }
+    timer("landed",20000)
+}
+if(clk("landed")){
+    if(TARDIS:tardisLongflighted()==1){
+        TARDIS:tardisLongflight()
+    }else{}
+    if(TARDIS:tardisPowered()==1){
+        TARDIS:tardisPower()
+    }else{}
+    Program1=0
+    DoOnce3=0
+    EpModeAware=0
+    EpDo=0
+}
+    
+##------Secure Mode Stuff-----------------------------------------------
+
+    findExcludeEntity(TARDIS)
+    #findExcludePlayer(Owner)
+    findByClass("player")
+    findSortByDistance(TARDIS:pos())
+    Player=find()
+        
+    Dist=Player:pos():distance(TARDIS:pos())
+     
+        if(Secure==1){     
+            if(Dist<600){
+                if(TARDIS:tardisVisible()==1){
+                    TARDIS:tardisPhase()
+                }else{}
+                if(TARDIS:tardisPhyslocked()==0){
+                    TARDIS:tardisPhyslock()
+                }else{}
+                if(TARDIS:tardisIsomorphic()==0){
+                    TARDIS:tardisIsomorph()
+                }else{}
+                if(TARDIS:tardisLocked()==0){
+                    TARDIS:tardisLock()
+                    chatPrint(Owner,Player:name()+" has entered the TARDIS vicinity." )
+                }else{}
+                print("leleleelelelwke")
+            }elseif(Dist>600){
+                if(TARDIS:tardisLocked()==1){
+                    TARDIS:tardisLock()
+                    chatPrint(Owner,Player:name()+" has left the TARDIS vicinity.")
+                }
+                if(TARDIS:tardisVisible()==0){
+                    TARDIS:tardisPhase()
+                }
+                if(TARDIS:tardisPhyslocked()==1){
+                    TARDIS:tardisPhyslock()
+                }
+                if(TARDIS:tardisIsomorphic()==1){
+                    TARDIS:tardisIsomorph()
+                }
+            }
+        }
+        if(Secure==2){     
+            if(Dist<350){
+                if(TARDIS:tardisPhyslocked()==0){
+                    TARDIS:tardisPhyslock()
+                }
+                if(TARDIS:tardisIsomorphic()==0){
+                    TARDIS:tardisIsomorph()
+                }
+                if(TARDIS:tardisLocked()==0){
+                    TARDIS:tardisLock()
+                    holoPos(1,TARDIS:toWorld(vec(50,0,0)))
+                    holoAng(1,TARDIS:angles())
+                    Holo:soundPlay(2,50,"buttons/button1.wav")
+                    chatPrint(Player,"TARDIS VISUAL INTERFACE: Please leave the vicinity of "+Owner:name()+"'s TARDIS.")
+                    chatPrint(Owner,Player:name()+" has entered the TARDIS vicinity." )
+                }
+                holoAlpha(1,255)
+            }elseif(Dist>350){
+                if(TARDIS:tardisLocked()==1){
+                    TARDIS:tardisLock()
+                    holoPos(1,Interior:pos())
+                    Holo:soundPlay(3,50,"buttons/button18.wav")
+                    chatPrint(Owner,Player:name()+" has left the TARDIS vicinity.")
+                }
+                if(TARDIS:tardisPhyslocked()==1){
+                    TARDIS:tardisPhyslock()
+                }
+                if(TARDIS:tardisIsomorphic()==1){
+                    TARDIS:tardisIsomorph()
+                }
+                holoAlpha(1,0)
+            }
+        }
+    
+    if(Secure==1){
+        if(InFlight==1 | InTeleport==1 | InVortex==1){
+            Secure=0
+            SecureMemory=1
+            chatPrint(Owner,"Secure Mode 1 De-activated")
+        }
+    }
+    if(Secure==2){
+        if(InFlight==1 | InTeleport==1 | InVortex==1){
+            Secure=0
+            SecureMemory=2
+            chatPrint(Owner,"Secure Mode 2 De-activated")
+        }
+    }
+    
+    if(SecureMemory==1){
+        if(InFlight==0 | InTeleport==0 | InVortex==0){
+            Secure=1
+            SecureMemory=0
+            chatPrint(Owner,"Secure Mode 1 Activated")
+        }
+    }
+    if(SecureMemory==2){
+        if(InFlight==0 | InTeleport==0 | InVortex==0){
+            Secure=2
+            SecureMemory=0
+            chatPrint(Owner,"Secure Mode 2 Activated")
+        }
+    }
+    
+#--Fuel stuff-------------------------------------------------------------------------------------
+
+if(FuelOn==1 & TardisHp<10){
+    if(DoOnce4==0){
+        Leaking=1
+        DoOnce4=1
+        LeakFixSearch=1
+        timer("fuelcounter",1000)
+        chatPrint(Owner,"The TARDIS is leaking fuel due to excess damage!")
+    }
+}
+
+if(LeakFixSearch==1){
+    if(TardisHp==100){
+        Leaking=0
+        LeakFixSearch=0
+        DoOnce4=0
+        chatPrint(Owner,"The TARDIS has stopped leaking fuel.")
+    }
+}
+
+if(FuelOn==1 & InFlight==1){
+    timer("fuelcounter",1000)
+}
+if(FuelOn==1 & InTeleport==1){
+    timer("fuelcounter",1000)
+}
+#if(FuelOn==1 & InVortex==1){
+#    timer("fuelcounter",1000)
+#}
+
+if(clk("fuelcounter")){
+    if(InFlight==1){
+        if(Fuel>0){
+            Fuel=Fuel-FuelLossFlight
+        }
+        timer("fuelcounter",1000)
+        round(FuelPercent,1)
+    }elseif(InTeleport==1){
+        if(Fuel>0){
+            Fuel=Fuel-FuelLossTeleport
+        }
+        timer("fuelcounter",1000)
+        round(FuelPercent,1)
+    }elseif(Leaking==1){
+        if(Fuel>0){
+            Fuel=Fuel-FuelLossLeaking
+        }
+        timer("fuelcounter",1000)
+        round(FuelPercent,1)
+    #}elseif(InVortex==1){
+     #   if(Fuel!=0){
+      #      Fuel=Fuel-FuelLossVortex
+      #  }
+      #  timer("fuelcounter",1000)
+      #  round(FuelPercent,1)
+      #  print("leltest")
+    }
+}
+
+if(Fuel<=0 & InFlight==1){
+    TARDIS:tardisFlightmode()
+}
+
+if(Fuel<=0 & InTeleport==1){
+    if(DoOnce==0){
+        timer("materialise",100)
+        DoOnce=1
+    }
+}
+if(clk("materialise")){
+    TARDIS:tardisMaterialise()
+    timer("matreset",9000)
+    chatPrint(Owner,"Fuel cells empty. TARDIS materialising.")
+}
+if(clk("matreset")){
+    DoOnce=0
+}
+
+if(clk("refuel")){
+    if(TARDIS:tardisPowered()==0){
+        TARDIS:tardisPower()
+    }
+    Fuel=MaxFuel
+    Refuelling=0
+    holoAlpha(2,0)
+    soundStop(10)
+    soundStop(11)
+    TARDIS:soundPlay(12,50,"tardis/powerup.wav")
+    Interior:soundPlay(13,50,"tardis/powerup.wav")
+    round(FuelPercent,1)
+    chatPrint(Owner,"Refuelling complete.")
+}
+
+if(Fuel<=0){
+    if(TARDIS:tardisPowered()==1){
+        TARDIS:tardisPower()
+    }
+}
+
+if(Refuelling==1){
+    if(TARDIS:tardisPowered()==1){
+        TARDIS:tardisPower()
+    }
+}
+#---Paradox Stuff---------------------------------------------------------------------------------------
+
+if(Paradox==1){
+    if(TARDIS:tardisPowered()==1){
+        TARDIS:tardisPower()
+    }
+}
+if(clk("paradoxrandom"))
+{
+    ParadoxRandom1=random(1,100)
+    ParadoxRandom2=round(ParadoxRandom1)
+    #print(ParadoxRandom2)#--debug
+    timer("paradoxdecision",100)
+}
+if(clk("paradoxdecision"))
+{
+    if(ParadoxRandom2<15){
+        holoColor(2,vec(255,255,255))
+        stoptimer("refuel")
+        timer("paradox1",ParadoxRandom2*1000)
+        soundStop(10)
+        soundStop(11)
+        TARDIS:soundPlay(8,100,"ambient/energy/powerdown2.wav")
+        Interior:soundPlay(9,100,"ambient/energy/powerdown2.wav")
+        chatPrint(Owner,"Warning: Paradox Detected")
+        Fuel=0
+        Paradox=1
+        Secure=0
+        Refuelling=0
+    }
+}
+if(clk("paradox1")){
+    if(Paradox==1 & Destruct==0){
+        holoColor(2,vec(255,0,0))
+        Explodable1=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()-vec(0,0,150),ang(0,0,0),1)
+        Explodable1:setAlpha(0)
+        Explodable1:propBreak()
+        timer("paradox2",ParadoxRandom2*1000)
+    }elseif(Destruct==1 & Paradox==0){
+        Explodable1=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()-vec(0,0,150),ang(0,0,0),1)
+        Explodable1:setAlpha(0)
+        Explodable1:propBreak()
+        timer("paradox2",500)
+    }
+}
+if(clk("paradox2")){
+    if(Paradox==1 & Destruct==0){
+        Explodable2=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()-vec(0,0,150),ang(0,0,0),1)
+        Explodable2:setAlpha(0)
+        Explodable2:propBreak()
+        Explodable3=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()+vec(0,0,150),ang(0,0,0),1)
+        Explodable3:setAlpha(0)
+        Explodable3:propBreak()
+        timer("paradox3",ParadoxRandom2*1000)
+    }elseif(Destruct==1 & Paradox==0){
+        Explodable2=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()-vec(0,0,150),ang(0,0,0),1)
+        Explodable2:setAlpha(0)
+        Explodable2:propBreak()
+        Explodable3=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()+vec(0,0,150),ang(0,0,0),1)
+        Explodable3:setAlpha(0)
+        Explodable3:propBreak()
+        timer("paradox3",500)
+    }
+}
+if(clk("paradox3")){
+    if(Paradox==1 & Destruct==0){
+        Explodable4=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()+vec(0,0,150),ang(0,0,0),1)
+        Explodable4:setAlpha(0)
+        Explodable4:propBreak()
+        Explodable5=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()-vec(0,0,150),ang(0,0,0),1)
+        Explodable5:setAlpha(0)
+        Explodable5:propBreak()
+        Explodable6=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos(),ang(0,0,0),1)
+        Explodable6:setAlpha(0)
+        Explodable6:propBreak()
+        timer("paradoxend",ParadoxRandom2*1000)
+    }elseif(Destruct==1 & Paradox==0){
+        Explodable4=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()+vec(0,0,150),ang(0,0,0),1)
+        Explodable4:setAlpha(0)
+        Explodable4:propBreak()
+        Explodable5=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos()-vec(0,0,150),ang(0,0,0),1)
+        Explodable5:setAlpha(0)
+        Explodable5:propBreak()
+        Explodable6=propSpawn("models/props_c17/oildrum001_explosive.mdl",Interior:pos(),ang(0,0,0),1)
+        Explodable6:setAlpha(0)
+        Explodable6:propBreak()
+        if(DestructRun<=3){
+            timer("paradox1",500)
+            DestructRun++
+        }else{
+            chatPrint(Owner,"Self-Destruction completed.")
+            TARDIS:soundPlay(1,500,"ambient/explosions/exp1.wav")
+            DestructRun=0
+            Destruct=0
+        }
+    }
+}
+
+if(clk("paradoxend")){
+    Paradox=0
+    holoAlpha(2,0)
+    holoColor(2,vec(0,200,0))
+    chatPrint(Owner,"Paradox averted")
+    if(TARDIS:tardisPowered()==1){
+        TARDIS:tardisPower()
+    }
+}
+
+XYZ=getEscapePos()
