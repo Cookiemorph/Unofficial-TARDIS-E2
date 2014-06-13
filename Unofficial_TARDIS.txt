@@ -211,42 +211,6 @@ if (first()){
             return ang(0,0,0)
         }
     }
-    
-    function vector refuelCornerTopLeft(){
-        if(map()=="gm_warmap_v5"){
-            return vec(1105.75,-3857.281,-14235)
-        }elseif(map()=="gm_bigcity"){
-            return vec(-2747.031,891.531,-11135.719)
-        }elseif(map()=="gm_madgrass_v6"){
-            return vec(10498.125,14484.656,0.219)
-        }elseif(map()=="gm_freespace_13"){
-            return vec(-2434.728760,7804.514648,-16807.750000)
-        }elseif(map()=="gm_carcon_ws"){
-            return vec(8702.253906,-4519.498535,-8707.254883)
-        }elseif(map()=="gm_buildersworld_finalv3"){
-            return vec(-4363.4677734375,8817.3115234375,-545.71875)
-        }else{
-            return vec(-3000,-3000,-3000)
-        }
-    }
-    
-    function vector refuelCornerBottomRight(){
-        if(map()=="gm_warmap_v5"){
-            return vec(2409.469,-4975.469,-14435)
-        }elseif(map()=="gm_bigcity"){
-            return vec(-1605.156,-1084.156,-11135.719)
-        }elseif(map()=="gm_madgrass_v6"){
-            return vec(14788.344,9618.531,0.25)
-        }elseif(map()=="gm_freespace_13"){
-            return vec(1411.187744,11651.302734,-14807.750000)
-        }elseif(map()=="gm_carcon_ws"){
-            return vec(6690.830078,-7745.601074,-8403.620117)
-        }elseif(map()=="gm_buildersworld_finalv3"){
-            return vec(-2390.1418457031,11501.942382813,-445.71875)
-        }else{
-            return vec(3000,3000,3000)
-        }
-    }
 }
 
 interval(270)
@@ -867,7 +831,6 @@ if(chatClk(Owner)){
     }elseif(Cmd=="!buddy"){
         if(LastSaid[2,string]){
             Buddy=findPlayerByName(Arg)
-            BuddyTrust=20
             BuddySystem=1
             #timer("buddytrust",60000)
             chatPrint(Owner,"Companion System enabled. "+Buddy:name()+" is now your companion.")
@@ -883,15 +846,6 @@ if(chatClk(Owner)){
     }
                                                   
 }
-
-#if(clk("buddytrust")){
-#    if(BuddySystem==1){
-#        BuddyTrust=BuddyTrust+1
-#        chatPrint(Buddy,"Your trust with "+Owner:name()+"'s TARDIS has increased to "+BuddyTrust)
-#        chatPrint(Owner,Buddy:name()+"'s trust with your TARDIS has increased to "+BuddyTrust)
-#        timer("buddytrust",60000)
-#    }
-#}
 
 if(BuddySystem==1){
     BS=Buddy:lastSaid():lower()
@@ -1284,7 +1238,7 @@ if(clk("landed")){
 ##------Secure Mode Stuff-----------------------------------------------
 
     findExcludeEntity(TARDIS)
-    #findExcludePlayer(Owner)
+    findExcludePlayer(Owner)
     findByClass("player")
     findSortByDistance(TARDIS:pos())
     Player=find()
@@ -1306,7 +1260,6 @@ if(clk("landed")){
                     TARDIS:tardisLock()
                     chatPrint(Owner,Player:name()+" has entered the TARDIS vicinity." )
                 }else{}
-                print("leleleelelelwke")
             }elseif(Dist>600){
                 if(TARDIS:tardisLocked()==1){
                     TARDIS:tardisLock()
