@@ -1,4 +1,4 @@
-@name TARDIS Unofficial By Cookiemorph
+@name TARDIS Unofficial By Cookiemorph FixBy dV
 @model models/drmatt/tardis/atomaccel.mdl
 @inputs
 @outputs XYZ:vector
@@ -1235,15 +1235,17 @@ if(clk("landed")){
     EpDo=0
 }
     
-##------Secure Mode Stuff-----------------------------------------------
+##------Secure Mode Stuff--------------------Fixed Some entity finder stuff- doctor Vendetta---##
+               runOnTick(1)                         
+findInSphere(TARDIS:pos(),5000000)          
+findSortByDistance(TARDIS:pos())             
+findIncludeClass("player")                
+findExcludePlayer(Owner)       
+         
+Player = findResult(1)                                
 
-    findExcludeEntity(TARDIS)
-    findExcludePlayer(Owner)
-    findByClass("player")
-    findSortByDistance(TARDIS:pos())
-    Player=find()
-        
-    Dist=Player:pos():distance(TARDIS:pos())
+
+Dist = TARDIS:pos():distance(Player:pos())
      
         if(Secure==1){     
             if(Dist<600){
@@ -1310,35 +1312,36 @@ if(clk("landed")){
             }
         }
     
-    if(Secure==1){
+    ###---------------Fixed Secure Memory Stuff so it doesnt spam in flight-doctor Vendetta-------###
+    
+if(Secure==1){
         if(InFlight==1 | InTeleport==1 | InVortex==1){
             Secure=0
             SecureMemory=1
             chatPrint(Owner,"Secure Mode 1 De-activated")
-        }
-    }
+}
+}
     if(Secure==2){
         if(InFlight==1 | InTeleport==1 | InVortex==1){
             Secure=0
             SecureMemory=2
             chatPrint(Owner,"Secure Mode 2 De-activated")
-        }
-    }
-    
+}
+}
+if(InFlight==0 & InTeleport==0 & InVortex==0){
     if(SecureMemory==1){
-        if(InFlight==0 | InTeleport==0 | InVortex==0){
-            Secure=1
-            SecureMemory=0
-            chatPrint(Owner,"Secure Mode 1 Activated")
-        }
-    }
-    if(SecureMemory==2){
-        if(InFlight==0 | InTeleport==0 | InVortex==0){
-            Secure=2
-            SecureMemory=0
-            chatPrint(Owner,"Secure Mode 2 Activated")
-        }
-    }
+        Secure=1
+        SecureMemory=0
+        chatPrint(Owner,"Secure Mode 1 Re-activated")
+        }elseif(SecureMemory==2){
+        Secure=2
+        SecureMemory=0
+        chatPrint(Owner,"Secure Mode 2 Re-activated")
+}else{}
+}
+
+    
+    
     
 #--Fuel stuff-------------------------------------------------------------------------------------
 
